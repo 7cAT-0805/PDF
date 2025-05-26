@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能PDF閱讀器</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
+</head>
+<body>
+    <h1>AI智能PDF閱讀器</h1>
+    <p>上傳PDF文件並與AI助手交流探討文件內容</p>
+    
+    <div class="app-container">
+        <div class="upload-container">
+            <input type="file" id="file-input" accept="application/pdf" />
+            <button class="upload-btn" id="upload-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="margin-right: 8px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                選擇 PDF 文件
+            </button>
+            <p id="file-name"></p>
+        </div>
+        
+        <div class="content-area">
+            <div class="pdf-viewer" id="pdf-viewer">
+                <div id="pdf-container">
+                    <!-- 高亮疊加層Canvas -->
+                    <canvas id="pdf-highlight-overlay"></canvas> 
+                    <div class="no-pdf-message" id="no-pdf-message">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>上傳 PDF 檔案後將在此處顯示</span>
+                    </div>
+                </div>
+                <div class="loading" id="loading">
+                    <p>正在處理 PDF，請稍候...</p>
+                </div>
+                <div class="pdf-controls">
+                    <div class="page-counter" id="page-counter"></div>
+                    <div class="zoom-controls">
+                        <button class="nav-btn" id="zoom-out" title="縮小">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                            </svg>
+                        </button>
+                        <button class="nav-btn" id="zoom-in" title="放大">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                        <button class="nav-btn" id="zoom-reset" title="重設縮放">自適應</button>
+                    </div>
+                    <div class="navigation">
+                        <button class="nav-btn" id="prev-page" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            上一頁
+                        </button>
+                        <button class="nav-btn" id="next-page" disabled>
+                            下一頁
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ai-chat">
+                <div class="chat-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    學習歷程助手
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message ai-message">
+                        您好！我是您的美編與學習歷程製作AI助手。上傳您的PDF，我們可以一起討論設計排版或內容呈現喔！
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="message-input" placeholder="輸入您的問題..." />
+                    <button id="send-message">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用 PDF.js 庫來處理 PDF 文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+    <!-- 添加 Marked.js 用於解析 Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 設定 Marked.js 選項 -->
+    <script>
+        // 配置 marked 選項，使其安全地渲染 Markdown
+        marked.setOptions({
+            breaks: true, // 允許換行
+            sanitize: false, // 由於 sanitize 已棄用，我們將使用 DOMPurify 或自定義的處理
+            mangle: false, // 不混淆電子郵件地址
+            headerIds: false, // 不自動添加 id 到標題
+        });
+    </script>
+    <!-- 添加 DOMPurify 用於清理 HTML 防止 XSS 攻擊 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.5/purify.min.js"></script>
+    <!-- 自定義腳本 - 作為模組載入 -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
