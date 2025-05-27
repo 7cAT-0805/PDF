@@ -441,44 +441,49 @@ p {
   }
 }
 
-@keyframes pulse {
-  0% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.7;
-  }
-
-  100% {
-    opacity: 1;
-  }
+/* 訪客統計區域樣式 */
+.visitor-stats {
+  max-width: 800px;
+  margin: 0 auto 15px;
+  padding: 8px 15px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: var(--border-radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-size: 0.85rem;
+  color: var(--secondary-color);
+  text-align: center;
+  transition: var(--transition);
+  animation: fadeInDown 0.5s;
 }
 
-/* 響應式設計 */
-@media (max-width: 992px) {
-  .content-area {
-    flex-direction: column;
-    height: auto;
-  }
-
-  .pdf-viewer,
-  .ai-chat {
-    height: 500px;
-  }
+.visitor-stats:hover {
+  background-color: white;
+  box-shadow: var(--box-shadow);
 }
 
-@media (max-width: 576px) {
+#visitor-count {
+  font-weight: 500;
+}
 
-  .pdf-viewer,
-  .ai-chat {
-    height: 400px;
-  }
+.visitor-info-container {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 5px;
+  font-size: 0.8rem;
+  opacity: 0.8;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
 
-  .pdf-controls {
-    flex-direction: column;
-    gap: 10px;
-  }
+.visitor-item {
+  background-color: #f0f2f5;
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin: 2px;
+  white-space: nowrap;
+  animation: messageAppear 0.3s;
 }
 
 /* 確保所有消息文字靠左對齊 */

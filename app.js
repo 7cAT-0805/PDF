@@ -3,7 +3,145 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // 設定 PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
 
+// 訪客統計功能
+function initVisitorStats() {
+    const visitorCount = document.getElementById('visitor-count');
+    const visitorInfo = document.getElementById('visitor-info');
+    
+    // 從 localStorage 獲取已記錄的訪客數據
+    let visitors = JSON.parse(localStorage.getItem('pdf_reader_visitors') || '[]');
+    
+    // 獲取設備資訊
+    const deviceInfo = {
+        browser: getBrowserInfo(),
+        os: getOSInfo(),
+        screenSize: `${window.screen.width}x${window.screen.height}`,
+        time: new Date().toLocaleString(),
+        uniqueId: generateDeviceId()
+    };
+    
+    // 獲取 IP 資訊 (使用免費 API)
+    fetch('https://api.ipify.org?format=json')
+        .then(response => response.json())
+        .then(data => {
+            deviceInfo.ip = data.ip;
+            
+            // 檢查此設備是否已記錄
+            const isNewVisitor = !visitors.some(v => v.uniqueId === deviceInfo.uniqueId);
+            
+            if (isNewVisitor) {
+                visitors.push(deviceInfo);
+                localStorage.setItem('pdf_reader_visitors', JSON.stringify(visitors));
+            }
+            
+            // 更新訪客計數器
+            visitorCount.textContent = `總計訪客數：${visitors.length} | 您的 IP：${deviceInfo.ip} | 設備：${deviceInfo.os} ${deviceInfo.browser}`;
+            
+            // 顯示最近5個訪客的資訊
+            updateVisitorList(visitors, visitorInfo);
+        })
+        .catch(error => {
+            console.error('無法獲取 IP 地址:', error);
+            deviceInfo.ip = '無法獲取';
+            
+            // 即使無法獲取 IP，也嘗試記錄設備信息
+            const isNewVisitor = !visitors.some(v => v.uniqueId === deviceInfo.uniqueId);
+            if (isNewVisitor) {
+                visitors.push(deviceInfo);
+                localStorage.setItem('pdf_reader_visitors', JSON.stringify(visitors));
+            }
+            
+            visitorCount.textContent = `總計訪客數：${visitors.length} | 設備：${deviceInfo.os} ${deviceInfo.browser}`;
+            updateVisitorList(visitors, visitorInfo);
+        });
+}
+
+// 更新訪客列表顯示
+function updateVisitorList(visitors, container) {
+    container.innerHTML = '';
+    
+    // 只顯示最近的 5 個訪客
+    const recentVisitors = [...visitors].reverse().slice(0, 5);
+    
+    recentVisitors.forEach(visitor => {
+        const visitorElement = document.createElement('span');
+        visitorElement.className = 'visitor-item';
+        visitorElement.textContent = `${visitor.ip || '未知IP'} (${visitor.os} ${visitor.browser})`;
+        container.appendChild(visitorElement);
+    });
+}
+
+// 獲取瀏覽器資訊
+function getBrowserInfo() {
+    const ua = navigator.userAgent;
+    let browser = "未知瀏覽器";
+    
+    if (ua.indexOf("Firefox") > -1) {
+        browser = "Firefox";
+    } else if (ua.indexOf("SamsungBrowser") > -1) {
+        browser = "Samsung Browser";
+    } else if (ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) {
+        browser = "Opera";
+    } else if (ua.indexOf("Edge") > -1 || ua.indexOf("Edg") > -1) {
+        browser = "Edge";
+    } else if (ua.indexOf("Chrome") > -1) {
+        browser = "Chrome";
+    } else if (ua.indexOf("Safari") > -1) {
+        browser = "Safari";
+    }
+    
+    return browser;
+}
+
+// 獲取操作系統資訊
+function getOSInfo() {
+    const ua = navigator.userAgent;
+    let os = "未知系統";
+    
+    if (ua.indexOf("Win") > -1) {
+        os = "Windows";
+    } else if (ua.indexOf("Mac") > -1) {
+        os = "MacOS";
+    } else if (ua.indexOf("iPhone") > -1) {
+        os = "iOS";
+    } else if (ua.indexOf("iPad") > -1) {
+        os = "iPadOS";
+    } else if (ua.indexOf("Android") > -1) {
+        os = "Android";
+    } else if (ua.indexOf("Linux") > -1) {
+        os = "Linux";
+    }
+    
+    return os;
+}
+
+// 生成一個簡單的裝置唯一識別碼
+function generateDeviceId() {
+    // 結合瀏覽器資訊、螢幕尺寸等創建一個簡單的識別碼
+    const components = [
+        navigator.userAgent,
+        window.screen.width,
+        window.screen.height,
+        navigator.language,
+        navigator.platform
+    ];
+    
+    let idString = components.join('|');
+    let hash = 0;
+    
+    for (let i = 0; i < idString.length; i++) {
+        const char = idString.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // 轉換為 32bit 整數
+    }
+    
+    return Math.abs(hash).toString(16);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // 初始化訪客統計 - 確保在頁面加載時調用
+    initVisitorStats();
+    
     // PDF 相關元素
     const fileInput = document.getElementById('file-input');
     const uploadButton = document.getElementById('upload-button');
